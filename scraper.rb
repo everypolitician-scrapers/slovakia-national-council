@@ -47,8 +47,7 @@ xml.each do |chamber|
     start_date: chamber.xpath('.//founding_date').text,
     end_date: chamber.xpath('.//dissolution_date').text,
   }
-  # term[:name] = '%s. volební období' % term[:id]
-  warn term
+  # warn term
   ScraperWiki.save_sqlite([:id], term, 'terms')
 
   # http://api.parldata.eu/sk/nrsr/memberships?where={"organization_id":"54d2a42b273a394ad5db921e"}&embed=["person.memberships.organization"]
@@ -96,13 +95,13 @@ xml.each do |chamber|
         party: 'Independent', 
         party_id: 'IND',
       })
-      puts row.to_s.red
+      # puts row.to_s.red
       ScraperWiki.save_sqlite([:id, :term], row)
     else
       mems.each do |mem|
         range = overlap(mem, term) or raise "No overlap"
         row = data.merge(mem).merge(range)
-        puts row.to_s.magenta
+        # puts row.to_s.magenta
         ScraperWiki.save_sqlite([:id, :term, :start_date], row)
       end
     end
