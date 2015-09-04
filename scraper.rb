@@ -111,7 +111,7 @@ xml.each do |chamber|
       gmems.each do |gmem|
         range = overlap(gmem, cmem, term) or raise "No overlap"
         row = data.merge(gmem).merge(range).merge({ mem_id: (@mem_id += 1) })
-        puts row.to_s.magenta if gmems.count > 1
+        # puts row.to_s.magenta if gmems.count > 1
         ScraperWiki.save_sqlite([:mem_id], row)
       end
     end
