@@ -23,11 +23,11 @@ def noko_q(endpoint, h)
   return [entries, noko_q(endpoint, h.merge(page: np.text[/page=(\d+)/, 1]))].flatten
 end
 
-def overlap(mem, term)
-  mS = [mem[:start_date], mem[:faction_start], '0000-00-00'].find { |d| !d.to_s.empty? }
-  mE = [mem[:end_date],   mem[:faction_end],   '9999-99-99'].find { |d| !d.to_s.empty? }
-  tS = [term[:start_date], '0000-00-00'].find { |d| !d.to_s.empty? }
-  tE = [term[:end_date],   '9999-99-99'].find { |d| !d.to_s.empty? }
+def overlap(gmem, cmem, term)
+  mS = [gmem[:start_date], gmem[:faction_start], '0000-00-00'].find { |d| !d.to_s.empty? }
+  mE = [gmem[:end_date],   gmem[:faction_end],   '9999-99-99'].find { |d| !d.to_s.empty? }
+  tS = [cmem[:start_date], term[:start_date], '0000-00-00'].find { |d| !d.to_s.empty? }
+  tE = [cmem[:end_date],   term[:end_date],   '9999-99-99'].find { |d| !d.to_s.empty? }
 
   return unless mS < tE && mE > tS
   (s, e) = [mS, mE, tS, tE].sort[1,2]
@@ -81,6 +81,11 @@ xml.each do |chamber|
     }
     # data.delete :sort_name if data[:sort_name] == ','
 
+    cmem = {
+      start_date: mem.xpath('start_date').text,
+      end_date: mem.xpath('end_date').text,
+    }
+
     gmems = person.xpath('memberships[organization[classification[text()="parliamentary group"]]]').map { |gm|
       {
         faction: gm.xpath('organization/name').text,
@@ -90,7 +95,7 @@ xml.each do |chamber|
         start_date: gm.xpath('start_date').text,
         end_date: gm.xpath('end_date').text,
       }
-    }.select { |gm| overlap(gm, term) } 
+    }.select { |gm| overlap(gm, cmem, term) } 
 
     if gmems.count.zero?
       row = data.merge({
@@ -101,9 +106,9 @@ xml.each do |chamber|
       ScraperWiki.save_sqlite([:id, :term], row)
     else
       gmems.each do |gmem|
-        range = overlap(gmem, term) or raise "No overlap"
+        range = overlap(gmem, cmem, term) or raise "No overlap"
         row = data.merge(gmem).merge(range)
-        puts row.to_s.magenta if data[:name] == 'Jozef Viskupič'
+        puts row.to_s.magenta 
         ScraperWiki.save_sqlite([:id, :term, :start_date], row)
       end
     end
