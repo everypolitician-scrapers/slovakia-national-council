@@ -81,18 +81,18 @@ xml.each do |chamber|
     }
     # data.delete :sort_name if data[:sort_name] == ','
 
-    mems = person.xpath('memberships[organization[classification[text()="parliamentary group"]]]').map { |m|
+    gmems = person.xpath('memberships[organization[classification[text()="parliamentary group"]]]').map { |gm|
       {
-        faction: m.xpath('organization/name').text,
-        faction_id: m.xpath('.//identifiers[scheme[text()="nrsr.sk"]]/identifier').text,
-        faction_start: m.xpath('organization/founding_date').text,
-        faction_end: m.xpath('organization/dissolution_date').text,
-        start_date: m.xpath('start_date').text,
-        end_date: m.xpath('end_date').text,
+        faction: gm.xpath('organization/name').text,
+        faction_id: gm.xpath('.//identifiers[scheme[text()="nrsr.sk"]]/identifier').text,
+        faction_start: gm.xpath('organization/founding_date').text,
+        faction_end: gm.xpath('organization/dissolution_date').text,
+        start_date: gm.xpath('start_date').text,
+        end_date: gm.xpath('end_date').text,
       }
-    }.select { |m| overlap(m, term) } 
+    }.select { |gm| overlap(gm, term) } 
 
-    if mems.count.zero?
+    if gmems.count.zero?
       row = data.merge({
         faction: 'Independent', 
         faction_id: 'IND',
@@ -100,10 +100,10 @@ xml.each do |chamber|
       # puts row.to_s.red
       ScraperWiki.save_sqlite([:id, :term], row)
     else
-      mems.each do |mem|
-        range = overlap(mem, term) or raise "No overlap"
-        row = data.merge(mem).merge(range)
-        # puts row.to_s.magenta 
+      gmems.each do |gmem|
+        range = overlap(gmem, term) or raise "No overlap"
+        row = data.merge(gmem).merge(range)
+        puts row.to_s.magenta if data[:name] == 'Jozef Viskupič'
         ScraperWiki.save_sqlite([:id, :term, :start_date], row)
       end
     end
