@@ -24,10 +24,10 @@ def noko_q(endpoint, h)
 end
 
 def overlap(mem, term)
-  mS = mem[:start_date].to_s.empty?  ? '0000-00-00' : mem[:start_date]
-  mE = mem[:end_date].to_s.empty?    ? '9999-99-99' : mem[:end_date]
-  tS = term[:start_date].to_s.empty? ? '0000-00-00' : term[:start_date]
-  tE = term[:end_date].to_s.empty?   ? '9999-99-99' : term[:end_date]
+  mS = [mem[:start_date], mem[:faction_start], '0000-00-00'].find { |d| !d.to_s.empty? }
+  mE = [mem[:end_date],   mem[:faction_end],   '9999-99-99'].find { |d| !d.to_s.empty? }
+  tS = [term[:start_date], '0000-00-00'].find { |d| !d.to_s.empty? }
+  tE = [term[:end_date],   '9999-99-99'].find { |d| !d.to_s.empty? }
 
   return unless mS < tE && mE > tS
   (s, e) = [mS, mE, tS, tE].sort[1,2]
@@ -47,10 +47,10 @@ xml.each do |chamber|
     start_date: chamber.xpath('.//founding_date').text,
     end_date: chamber.xpath('.//dissolution_date').text,
   }
-  # warn term
+  puts term
   ScraperWiki.save_sqlite([:id], term, 'terms')
 
-  # http://api.parldata.eu/sk/nrsr/memberships?where={"organization_id":"54d2a42b273a394ad5db921e"}&embed=["person.memberships.organization"]
+  # http://api.parldata.eu/sk/nrsr/memberships?where={"organization_id":"54d2a70d273a394ad5dbb870"}&embed=["person.memberships.organization"]
   mems = noko_q('memberships', { 
     where: %Q[{"organization_id":"#{term[:identifier__parldata]}"}],
     max_results: 50,
@@ -83,8 +83,10 @@ xml.each do |chamber|
 
     mems = person.xpath('memberships[organization[classification[text()="parliamentary group"]]]').map { |m|
       {
-        party: m.xpath('organization/name').text,
-        party_id: m.xpath('.//identifiers[scheme[text()="nrsr.sk"]]/identifier').text,
+        faction: m.xpath('organization/name').text,
+        faction_id: m.xpath('.//identifiers[scheme[text()="nrsr.sk"]]/identifier').text,
+        faction_start: m.xpath('organization/founding_date').text,
+        faction_end: m.xpath('organization/dissolution_date').text,
         start_date: m.xpath('start_date').text,
         end_date: m.xpath('end_date').text,
       }
@@ -92,8 +94,8 @@ xml.each do |chamber|
 
     if mems.count.zero?
       row = data.merge({
-        party: 'Independent', 
-        party_id: 'IND',
+        faction: 'Independent', 
+        faction_id: 'IND',
       })
       # puts row.to_s.red
       ScraperWiki.save_sqlite([:id, :term], row)
@@ -101,7 +103,7 @@ xml.each do |chamber|
       mems.each do |mem|
         range = overlap(mem, term) or raise "No overlap"
         row = data.merge(mem).merge(range)
-        # puts row.to_s.magenta
+        # puts row.to_s.magenta 
         ScraperWiki.save_sqlite([:id, :term, :start_date], row)
       end
     end
