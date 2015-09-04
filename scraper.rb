@@ -37,6 +37,8 @@ def overlap(gmem, cmem, term)
   }
 end
 
+@mem_id = 0
+
 # http://api.parldata.eu/sk/nrsr/organizations?where={"classification":"chamber"}
 xml = noko_q('organizations', where: %Q[{"classification":"chamber"}] )
 xml.each do |chamber|
@@ -101,15 +103,16 @@ xml.each do |chamber|
       row = data.merge({
         faction: 'Independent', 
         faction_id: 'IND',
+        mem_id: (@mem_id += 1),
       })
       # puts row.to_s.red
-      ScraperWiki.save_sqlite([:id, :term], row)
+      ScraperWiki.save_sqlite([:mem_id], row)
     else
       gmems.each do |gmem|
         range = overlap(gmem, cmem, term) or raise "No overlap"
-        row = data.merge(gmem).merge(range)
-        puts row.to_s.magenta 
-        ScraperWiki.save_sqlite([:id, :term, :start_date], row)
+        row = data.merge(gmem).merge(range).merge({ mem_id: (@mem_id += 1) })
+        puts row.to_s.magenta if gmems.count > 1
+        ScraperWiki.save_sqlite([:mem_id], row)
       end
     end
   end
