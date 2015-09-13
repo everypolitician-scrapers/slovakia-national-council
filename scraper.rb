@@ -74,8 +74,11 @@ def fill_independents(mems)
     })
     gap = nil if gap[:end_date] - gap[:start_date] < 2
     [one, gap, two]
-  end.flatten.compact.uniq
-
+  end.flatten.compact.uniq.map { |r|
+    r.delete :start_date if r[:start_date].to_s == '1000-01-01'
+    r.delete :end_date   if r[:end_date].to_s == '9000-12-31'
+    r
+  }
 end
 
 def overlap(mem, term)

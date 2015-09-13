@@ -1,6 +1,5 @@
 
 .cache/*
-
 *.swp
-
+*.cache
 *.sqlite
