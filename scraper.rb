@@ -21,8 +21,10 @@ def noko_q(endpoint, h)
   else
     result = RestClient.get (@API_URL % endpoint), params: h
     warn result.request.url
-    FileUtils.mkpath '.rccache'
-    File.write(filename, result)
+    if ENV['MORPH_CACHE']
+      FileUtils.mkpath '.rccache'
+      File.write(filename, result)
+    end
   end
   doc = Nokogiri::XML(result)
   doc.remove_namespaces!
