@@ -15,17 +15,8 @@ OpenURI::Cache.cache_path = '.cache'
 @API_URL = 'http://api.parldata.eu/sk/nrsr/%s'
 
 def noko_q(endpoint, h)
-  filename = ".rccache/%s-%s" % [endpoint, h.to_s.gsub(/\W/,'') ]
-  if File.exist? filename
-    result = File.read filename
-  else
-    result = RestClient.get (@API_URL % endpoint), params: h
-    warn result.request.url
-    if ENV['MORPH_CACHE']
-      FileUtils.mkpath '.rccache'
-      File.write(filename, result)
-    end
-  end
+  result = RestClient.get (@API_URL % endpoint), params: h
+  warn result.request.url
   doc = Nokogiri::XML(result)
   doc.remove_namespaces!
   entries = doc.xpath('resource/resource')
