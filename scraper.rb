@@ -176,7 +176,6 @@ people.each do |person|
   combine(term: term_mems, faction_id: group_mems).each do |mem|
     data = person_data.merge(mem)
     data[:faction] = groups.find(->{{name: 'Independent'}}) { |g| g[:id] == mem[:faction_id] }[:name]
-    puts data.to_s.cyan
     ScraperWiki.save_sqlite([:id, :term, :faction_id, :start_date], data.reject { |k,v| v.to_s.empty? })
   end
 
