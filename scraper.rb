@@ -123,6 +123,15 @@ people.each do |person|
     source: person.xpath('./sources[note[text()="Profil na webe NRSR"]]/url').text,
   }
 
+  term_mems = person.xpath('memberships[organization[classification[text()="chamber"]]]').map { |gm|
+    {
+      name: gm.xpath('organization/name').text,
+      id: gm.xpath('.//identifiers[scheme[text()="nrsr.sk"]]/identifier').text,
+      start_date: gm.xpath('start_date').text,
+      end_date: gm.xpath('end_date').text,
+    }
+  }
+
   group_mems = person.xpath('memberships[organization[classification[text()="parliamentary group"]]]').map { |gm|
     {
       name: gm.xpath('organization/name').text,
@@ -131,15 +140,6 @@ people.each do |person|
       end_date: earliest_date(gm.xpath('organization/dissolution_date').text, gm.xpath('end_date').text),
     }
   }
-
-  term_mems = person.xpath('memberships[organization[classification[text()="chamber"]]]').map { |gm|
-    {
-      name: gm.xpath('organization/name').text,
-      id: gm.xpath('.//identifiers[scheme[text()="nrsr.sk"]]/identifier').text,
-      start_date: gm.xpath('start_date').text,
-      end_date: gm.xpath('end_date').text,
-    }
-  }.reject { |tm| tm[:id].to_i == 1 } # no faction information available for term 1
 
   combine(term: term_mems, faction_id: group_mems).each do |mem|
     data = person_data.merge(mem)
