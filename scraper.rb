@@ -51,21 +51,21 @@ end
 def fill_independents(mems)
   ind = { name: "Independent", id: "0" }
 
-  if mems.size == 0
-    mems = [ ind ]
-  else
-    mems.unshift ind.merge( end_date: mems.first[:start_date] ) unless mems.first[:start_date].to_s.empty?
-    mems.push    ind.merge( start_date: mems.last[:end_date]  ) unless mems.last[:end_date].to_s.empty?
-  end
-
   sorted = mems.map do |m| 
     {
       id: m[:id],
       name: m[:name],
-      start_date: m[:start_date].to_s.empty?  ? Date.parse('1000-01-01') : Date.parse(m[:start_date]),
-      end_date: m[:end_date].to_s.empty?  ? Date.parse('9000-12-31') : Date.parse(m[:end_date]),
+      start_date: m[:start_date].to_s.empty?  ? Date.parse('1001-01-01') : Date.parse(m[:start_date]),
+      end_date: m[:end_date].to_s.empty?  ? Date.parse('9001-01-01') : Date.parse(m[:end_date]),
     }
   end.sort_by { |m| m[:start_date] }
+
+  if sorted.size == 0
+    sorted = [ ind ]
+  else
+    sorted.unshift ind.merge( end_date: sorted.first[:start_date] - 1 ) unless sorted.first[:start_date].to_s == '1001-01-01'
+    sorted.push    ind.merge( start_date: sorted.last[:end_date] + 1  ) unless sorted.last[:end_date].to_s == '9001-01-01'
+  end
 
   all = sorted.each_cons(2).map do |one, two|
     gap = ind.merge({ 
@@ -75,8 +75,8 @@ def fill_independents(mems)
     gap = nil if gap[:end_date] - gap[:start_date] < 2
     [one, gap, two]
   end.flatten.compact.uniq.map { |r|
-    r.delete :start_date if r[:start_date].to_s == '1000-01-01'
-    r.delete :end_date   if r[:end_date].to_s == '9000-12-31'
+    r.delete :start_date if r[:start_date].to_s < '1010-01-01' || r[:start_date].to_s > '9000-01-01'
+    r.delete :end_date   if r[:end_date].to_s < '1010-01-01' || r[:end_date].to_s > '9000-01-01'
     r
   }
 end
@@ -106,17 +106,16 @@ end
 
 
 # http://api.parldata.eu/sk/nrsr/organizations?where={"classification":"chamber"}
-terms = noko_q('organizations', where: %Q[{"classification":"chamber"}] )
-terms.each do |chamber|
-  term = { 
+terms = noko_q('organizations', where: %Q[{"classification":"chamber"}] ).map do |chamber|
+  { 
     id: chamber.xpath('.//identifiers[scheme[text()="nrsr.sk"]]/identifier').text,
     identifier__parldata: chamber.xpath('.//id').text,
     name: chamber.xpath('.//name').text,
     start_date: chamber.xpath('.//founding_date').text,
     end_date: chamber.xpath('.//dissolution_date').text,
   }
-  ScraperWiki.save_sqlite([:id], term, 'terms')
 end
+ScraperWiki.save_sqlite([:id], terms, 'terms')
 
 # http://api.parldata.eu/sk/nrsr/organizations?where={"classification":"parliamentary group"}
 groups = noko_q('organizations', where: %Q[{"classification":"parliamentary group"}] ).map do |group|
@@ -136,6 +135,12 @@ people = noko_q('people', {
   max_results: 50,
   embed: '["memberships.organization"]' ,
 })
+
+# people = noko_q('people', { 
+  # where: %Q({"family_name":"Bugár"}),
+  # max_results: 50,
+  # embed: '["memberships.organization"]' ,
+# })
 
 people.each do |person|
   person.xpath('changes').each { |m| m.remove } # make eyeballing easier
@@ -159,11 +164,13 @@ people.each do |person|
   }
 
   term_mems = person.xpath('memberships[organization[classification[text()="chamber"]]]').map { |gm|
+    id = gm.xpath('.//identifiers[scheme[text()="nrsr.sk"]]/identifier').text
+    term = terms.find { |t| t[:id] == id }
     {
+      id: id,
       name: gm.xpath('organization/name').text,
-      id: gm.xpath('.//identifiers[scheme[text()="nrsr.sk"]]/identifier').text,
-      start_date: gm.xpath('start_date').text,
-      end_date: gm.xpath('end_date').text,
+      start_date: latest_date(gm.xpath('start_date').text, term[:start_date]),
+      end_date: earliest_date(gm.xpath('end_date').text, term[:end_date]),
     }
   }.reject { |tm| tm[:id].to_i == 1 } # no faction information available for term 1
 
