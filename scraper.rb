@@ -29,7 +29,7 @@ end
 
 def latest_date(*dates)
   dates.compact.reject(&:empty?).sort.last
-end 
+end
 
 def overlap_old(gmem, cmem, term)
   mS = [gmem[:start_date], gmem[:faction_start], '0000-00-00'].find { |d| !d.to_s.empty? }
@@ -39,7 +39,7 @@ def overlap_old(gmem, cmem, term)
 
   return unless mS < tE && mE > tS
   (s, e) = [mS, mE, tS, tE].sort[1,2]
-  return { 
+  return {
     start_date: s == '0000-00-00' ? nil : s,
     end_date:   e == '9999-99-99' ? nil : e,
   }
@@ -50,7 +50,7 @@ end
 def fill_independents(mems)
   ind = { name: "Independent", id: "0" }
 
-  sorted = mems.map do |m| 
+  sorted = mems.map do |m|
     {
       id: m[:id],
       name: m[:name],
@@ -67,7 +67,7 @@ def fill_independents(mems)
   end
 
   all = sorted.each_cons(2).map do |one, two|
-    gap = ind.merge({ 
+    gap = ind.merge({
       start_date: one[:end_date] + 1,
       end_date: two[:start_date] - 1,
     })
@@ -88,7 +88,7 @@ def overlap(mem, term)
 
   return unless mS < tE && mE > tS
   (s, e) = [mS, mE, tS, tE].sort[1,2]
-  return { 
+  return {
     _data: [mem, term],
     start_date: s == '0000-00-00' ? nil : s,
     end_date:   e == '9999-99-99' ? nil : e,
@@ -104,9 +104,9 @@ def combine(h)
 end
 
 
-# http://api.parldata.eu/sk/nrsr/organizations?where={"classification":"chamber"}
+# http://api.parldata.eu/sk/nrsr/organizations?where={"classification":"chamber"}
 terms = noko_q('organizations', where: %Q[{"classification":"chamber"}] ).map do |chamber|
-  { 
+  {
     id: chamber.xpath('.//identifiers[scheme[text()="nrsr.sk"]]/identifier').text,
     identifier__parldata: chamber.xpath('.//id').text,
     name: chamber.xpath('.//name').text,
@@ -116,9 +116,9 @@ terms = noko_q('organizations', where: %Q[{"classification":"chamber"}] ).map do
 end
 ScraperWiki.save_sqlite([:id], terms, 'terms')
 
-# http://api.parldata.eu/sk/nrsr/organizations?where={"classification":"parliamentary group"}
+# http://api.parldata.eu/sk/nrsr/organizations?where={"classification":"parliamentary group"}
 groups = noko_q('organizations', where: %Q[{"classification":"parliamentary group"}] ).map do |group|
-  data = { 
+  data = {
     id: group.xpath('.//identifiers[scheme[text()="nrsr.sk"]]/identifier').text,
     identifier__parldata: group.xpath('.//id').text,
     name: group.xpath('.//name').text,
@@ -130,12 +130,12 @@ groups = noko_q('organizations', where: %Q[{"classification":"parliamentary grou
 end
 
 # http://api.parldata.eu/sk/nrsr/people?embed=[%22memberships.organization%22]
-people = noko_q('people', { 
+people = noko_q('people', {
   max_results: 50,
   embed: '["memberships.organization"]' ,
 })
 
-# people = noko_q('people', { 
+# people = noko_q('people', {
   # where: %Q({"family_name":"Bugár"}),
   # max_results: 50,
   # embed: '["memberships.organization"]' ,
@@ -144,7 +144,7 @@ people = noko_q('people', {
 people.each do |person|
   person.xpath('changes').each { |m| m.remove } # make eyeballing easier
   nrsr_id = person.xpath('.//identifiers[scheme[text()="nrsr.sk"]]/identifier').text
-  person_data = { 
+  person_data = {
     id: nrsr_id,
     identifier__nrsr: nrsr_id,
     identifier__parldata: person.xpath('id').text,
