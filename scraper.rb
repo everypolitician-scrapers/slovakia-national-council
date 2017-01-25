@@ -14,7 +14,7 @@ OpenURI::Cache.cache_path = '.cache'
 @API_URL = 'http://api.parldata.eu/sk/nrsr/%s'
 
 def noko_q(endpoint, h)
-  result = RestClient.get (@API_URL % endpoint), params: h
+  result = RestClient.get (@API_URL % endpoint), params: h, accept: :xml
   warn result.request.url
   doc = Nokogiri::XML(result)
   doc.remove_namespaces!
