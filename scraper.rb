@@ -103,7 +103,7 @@ def combine(h)
   }.sort_by { |h| h[:start_date] }
 end
 
-ScraperWiki.sqliteexecute('DELETE FROM data') rescue nil
+ScraperWiki.sqliteexecute('DROP TABLE data') rescue nil
 
 # http://api.parldata.eu/sk/nrsr/organizations?where={"classification":"chamber"}
 terms = noko_q('organizations', where: %Q[{"classification":"chamber"}] ).map do |chamber|
