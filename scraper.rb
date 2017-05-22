@@ -144,7 +144,7 @@ people = noko_q('people', {
 
 people.each do |person|
   person.xpath('changes').each { |m| m.remove } # make eyeballing easier
-  nrsr_id = person.xpath('.//identifiers[scheme[text()="nrsr.sk"]]/identifier').text
+  nrsr_id = person.xpath('./identifiers[scheme[text()="nrsr.sk"]]/identifier').text
   person_data = {
     id: nrsr_id,
     identifier__nrsr: nrsr_id,
@@ -188,5 +188,4 @@ people.each do |person|
     data[:faction] = groups.find(->{{name: 'Independent'}}) { |g| g[:id] == mem[:faction_id] }[:name]
     ScraperWiki.save_sqlite([:id, :term, :faction_id, :start_date], data.reject { |k,v| v.to_s.empty? })
   end
-
 end
